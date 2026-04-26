@@ -19,6 +19,10 @@ All processing runs on-device. No cloud service is required.
 - Optional OpenCV preview window with hand overlay
 - Cross-platform Python implementation (Windows-oriented defaults included)
 
+## Quick Demo
+
+![Demo GIF](assets/demo.gif "Demo Animation")
+
 ## Project Status
 
 This repository is in active development with a Phase 1 foundation complete:
