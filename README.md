@@ -1,6 +1,6 @@
-# DeviceGesture (HandOS)
+# HandOS
 
-DeviceGesture is a local, real-time hand gesture desktop control project.
+HandOS is a local, real-time hand gesture desktop control project.
 The current implementation (`handos` package, Phase 1) uses a webcam and MediaPipe hand landmarks to:
 
 - Move the mouse cursor using the index fingertip
