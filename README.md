@@ -7,6 +7,12 @@ The current implementation (`handos` package, Phase 1) uses a webcam and MediaPi
 - Trigger a left click using a pinch gesture (thumb + index), optionally after a sustained hold
 - Smooth and stabilize motion with filtering and dead-zone suppression
 
+The repository now also includes:
+
+- a reusable engine layer under `handos/core`
+- preview rendering separated from the runtime in `handos/ui`
+- a polished React presentation layer under `web/`
+
 All processing runs on-device. No cloud service is required.
 
 ## Features
@@ -39,6 +45,10 @@ The codebase already includes scaffolding for later phases (for example, tempora
 ```text
 DeviceGesture/
   handos/
+    core/
+      engine.py            # Reusable runtime service
+      config.py            # Shared runtime config
+      events.py            # Structured engine events
     app.py                 # Main runtime loop and CLI
     __main__.py            # python -m handos entrypoint
     data.py                # VisionPacket data model
@@ -57,6 +67,10 @@ DeviceGesture/
       preprocessor.py      # Landmark/screen mapping + hand scale helpers
       model_asset.py       # One-time model download/cache logic
       frame_buffer.py      # Temporal buffer utility (future phases)
+    ui/
+      overlay.py           # Preview renderer using engine snapshots
+  web/
+    src/                   # Product presentation frontend
   requirements.txt
   pyproject.toml
 ```
