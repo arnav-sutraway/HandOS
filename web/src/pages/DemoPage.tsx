@@ -12,8 +12,7 @@ export function DemoPage() {
         <div className="eyebrow">Demo Surface</div>
         <h2>Show the interaction before people install the runtime.</h2>
         <p>
-          This page is designed to help present the product professionally while keeping the real
-          gesture engine native.
+          These are the 2 core interactions of HandOS: cursor movement and pinch click. More complex gestures and visualizations can be added later, but this is the heart of the experience.
         </p>
       </motion.div>
 
