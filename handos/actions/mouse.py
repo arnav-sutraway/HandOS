@@ -1,6 +1,34 @@
+import ctypes
+import sys
 from typing import Optional, Tuple
 
 import pyautogui
+
+
+if sys.platform == "win32":
+    INPUT_MOUSE = 0
+    MOUSEEVENTF_LEFTDOWN = 0x0002
+    MOUSEEVENTF_LEFTUP = 0x0004
+
+    class MOUSEINPUT(ctypes.Structure):
+        _fields_ = [
+            ("dx", ctypes.c_long),
+            ("dy", ctypes.c_long),
+            ("mouseData", ctypes.c_ulong),
+            ("dwFlags", ctypes.c_ulong),
+            ("time", ctypes.c_ulong),
+            ("dwExtraInfo", ctypes.c_void_p),
+        ]
+
+    class INPUT_UNION(ctypes.Union):
+        _fields_ = [("mi", MOUSEINPUT)]
+
+    class INPUT(ctypes.Structure):
+        _anonymous_ = ("u",)
+        _fields_ = [
+            ("type", ctypes.c_ulong),
+            ("u", INPUT_UNION),
+        ]
 
 
 class MouseController:
@@ -19,5 +47,23 @@ class MouseController:
         yi = int(max(0, min(self.screen_h - 1, round(y))))
         pyautogui.moveTo(xi, yi, _pause=False)
 
-    def click_left(self) -> None:
+    def click_left(self) -> bool:
+        if sys.platform == "win32":
+            return self._click_left_windows()
         pyautogui.click(button="left", _pause=False)
+        return True
+
+    def _click_left_windows(self) -> bool:
+        inputs = (
+            INPUT(type=INPUT_MOUSE, mi=MOUSEINPUT(dwFlags=MOUSEEVENTF_LEFTDOWN)),
+            INPUT(type=INPUT_MOUSE, mi=MOUSEINPUT(dwFlags=MOUSEEVENTF_LEFTUP)),
+        )
+        sent = ctypes.windll.user32.SendInput(
+            len(inputs),
+            (INPUT * len(inputs))(*inputs),
+            ctypes.sizeof(INPUT),
+        )
+        if sent != len(inputs):
+            pyautogui.click(button="left", _pause=False)
+            return False
+        return True

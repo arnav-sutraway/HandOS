@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "handos"
+version = "0.1.0"
+description = "Local hand-gesture desktop control"
+requires-python = ">=3.10"
+dependencies = [
+  "opencv-python>=4.8.0",
+  "mediapipe>=0.10.14",
+  "numpy>=1.24.0",
+  "pyautogui>=0.9.54",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["handos*"]

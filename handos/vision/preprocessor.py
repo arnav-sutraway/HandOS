@@ -23,8 +23,18 @@ def landmark_to_screen(
 
 
 def hand_scale(landmarks: np.ndarray) -> float:
-    """Euclidean distance wrist (0) → middle MCP (9), lower bound for normalization."""
-    wrist = landmarks[0, :3]
-    middle_mcp = landmarks[9, :3]
-    d = float(np.linalg.norm(wrist - middle_mcp))
-    return max(d, 1e-6)
+    """
+    Stable 2D palm scale for gesture normalization.
+
+    Uses wrist (0), index MCP (5), and pinky MCP (17) in image space to avoid
+    z-axis noise and to better match the apparent hand size in the preview.
+    """
+    wrist = landmarks[0, :2]
+    index_mcp = landmarks[5, :2]
+    pinky_mcp = landmarks[17, :2]
+    distances = (
+        float(np.linalg.norm(wrist - index_mcp)),
+        float(np.linalg.norm(wrist - pinky_mcp)),
+        float(np.linalg.norm(index_mcp - pinky_mcp)),
+    )
+    return max(sum(distances) / len(distances), 1e-6)

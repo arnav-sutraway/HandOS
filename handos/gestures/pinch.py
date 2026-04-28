@@ -8,8 +8,8 @@ def pinch_ratio(landmarks: np.ndarray, threshold: float = 0.05) -> tuple[float, 
     Normalized distance between thumb tip (4) and index tip (8).
     Returns (ratio, is_pinch) where ratio = dist / hand_size.
     """
-    thumb_tip = landmarks[4, :3]
-    index_tip = landmarks[8, :3]
+    thumb_tip = landmarks[4, :2]
+    index_tip = landmarks[8, :2]
     dist = float(np.linalg.norm(thumb_tip - index_tip))
     scale = hand_scale(landmarks)
     ratio = dist / scale
@@ -17,26 +17,41 @@ def pinch_ratio(landmarks: np.ndarray, threshold: float = 0.05) -> tuple[float, 
 
 
 class PinchStateMachine:
-    """Debounced pinch open/closed with rising-edge click notification."""
+    """Debounced pinch open/closed with optional hold-to-click timing."""
 
-    def __init__(self, activate_frames: int = 3, release_frames: int = 3) -> None:
+    def __init__(
+        self,
+        activate_frames: int = 3,
+        release_frames: int = 3,
+        click_hold_seconds: float = 0.0,
+    ) -> None:
         self.activate_frames = activate_frames
         self.release_frames = release_frames
+        self.click_hold_seconds = max(0.0, float(click_hold_seconds))
         self._high = 0
         self._low = 0
         self._pinched = False
+        self._held_seconds = 0.0
+        self._click_fired = False
 
     def reset(self) -> None:
         self._high = 0
         self._low = 0
         self._pinched = False
+        self._held_seconds = 0.0
+        self._click_fired = False
 
-    def update(self, is_pinch_raw: bool) -> tuple[bool, bool]:
+    @property
+    def held_seconds(self) -> float:
+        return self._held_seconds
+
+    def update(self, is_pinch_raw: bool, dt_seconds: float) -> tuple[bool, bool]:
         """
-        Returns (pinched_stable, click_rising_edge).
-        click_rising_edge is True on the first frame pinch becomes stably active.
+        Returns (pinched_stable, click_triggered).
+        When click_hold_seconds is 0, the click fires on stable pinch activation.
+        Otherwise it fires once after the stable pinch has been held long enough.
         """
-        click_edge = False
+        click_triggered = False
         if is_pinch_raw:
             self._high += 1
             self._low = 0
@@ -46,8 +61,20 @@ class PinchStateMachine:
 
         if not self._pinched and self._high >= self.activate_frames:
             self._pinched = True
-            click_edge = True
+            self._held_seconds = 0.0
+            self._click_fired = False
+            if self.click_hold_seconds <= 0.0:
+                self._click_fired = True
+                click_triggered = True
         elif self._pinched and self._low >= self.release_frames:
             self._pinched = False
+            self._held_seconds = 0.0
+            self._click_fired = False
 
-        return self._pinched, click_edge
+        if self._pinched and not self._click_fired and self.click_hold_seconds > 0.0:
+            self._held_seconds += max(0.0, float(dt_seconds))
+            if self._held_seconds >= self.click_hold_seconds:
+                self._click_fired = True
+                click_triggered = True
+
+        return self._pinched, click_triggered
