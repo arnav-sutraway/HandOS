@@ -21,7 +21,8 @@ All processing runs on-device. No cloud service is required.
 
 ## Quick Demo
 
-![Demo GIF](handos/assets/demo.gif "Demo Animation")
+![Demo GIF Moving](handos/assets/demo.gif "Demo Animation")
+![Demo GIF Clicking](handos/assets/click_demo.gif "Click Demo Animation")
 
 ## Project Status
 
