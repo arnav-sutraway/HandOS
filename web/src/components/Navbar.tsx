@@ -14,7 +14,8 @@ export function Navbar({ page, onNavigate }: NavbarProps) {
         </div>
       </button>
       <nav>
-        <a href="#features">Features</a>
+        <a href="#features">Overview</a>
+        <a href="#goals">Goals</a>
         <a href="#architecture">Architecture</a>
         <a href="#cli">CLI</a>
         <a href="#installation">Install</a>

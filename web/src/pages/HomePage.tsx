@@ -1,4 +1,4 @@
-import { Cpu, Gauge, MonitorSmartphone, ShieldCheck } from "lucide-react";
+import { Camera, Cpu, Gauge, MonitorSmartphone, ShieldCheck, Workflow } from "lucide-react";
 import { ArchitectureDiagram } from "../components/ArchitectureDiagram";
 import { CLIReference } from "../components/CLIReference";
 import { FeatureCard } from "../components/FeatureCard";
@@ -17,9 +17,9 @@ export function HomePage({ onGoToDemo }: HomePageProps) {
 
       <Layout
         id="features"
-        eyebrow="Why It Feels Real"
-        title="Built like a product, not just a prototype."
-        description="The runtime stays native and low-latency while the interface explains the system with product-level clarity."
+        eyebrow="Overview"
+        title="A local-first desktop gesture control system."
+        description="HandOS turns webcam hand tracking into desktop cursor movement and click input with a runtime designed for low latency, privacy, and direct OS control."
       >
         <div className="feature-grid">
           <FeatureCard
@@ -39,8 +39,38 @@ export function HomePage({ onGoToDemo }: HomePageProps) {
           />
           <FeatureCard
             icon={<MonitorSmartphone size={22} />}
-            title="Professional Presentation"
-            description="The product surface now has a polished landing page, CLI reference, and demo page for showcasing the work."
+            title="Clear Controls"
+            description="The project includes demo media, CLI usage, installation steps, and a cleaner structure for building a future desktop interface."
+          />
+        </div>
+      </Layout>
+
+      <Layout
+        id="goals"
+        eyebrow="Core Capabilities"
+        title="What HandOS does."
+        description="The system captures webcam frames, detects hand landmarks, smooths cursor motion, and recognizes pinch gestures for click input."
+      >
+        <div className="feature-grid">
+          <FeatureCard
+            icon={<Camera size={22} />}
+            title="Hand Tracking"
+            description="MediaPipe landmarks are used to detect a hand in real time and follow fingertip movement across the frame."
+          />
+          <FeatureCard
+            icon={<Workflow size={22} />}
+            title="Cursor Mapping"
+            description="Index fingertip coordinates are converted into screen coordinates and passed through smoothing before pointer movement."
+          />
+          <FeatureCard
+            icon={<ShieldCheck size={22} />}
+            title="Pinch Click"
+            description="Thumb and index finger distance is normalized against hand size so pinch gestures can trigger more reliable click input."
+          />
+          <FeatureCard
+            icon={<Gauge size={22} />}
+            title="Native Runtime"
+            description="All processing happens on-device, which keeps camera data local and avoids the latency of a browser-only control model."
           />
         </div>
       </Layout>
@@ -48,8 +78,8 @@ export function HomePage({ onGoToDemo }: HomePageProps) {
       <Layout
         id="architecture"
         eyebrow="System Design"
-        title="Threaded architecture with a cleaner boundary."
-        description="The engine exposes snapshots and events so the CLI, future desktop UI, and tests can all use the same runtime."
+        title="Threaded architecture with a reusable engine boundary."
+        description="The runtime separates camera capture, vision inference, gesture processing, and UI-facing state so the system stays responsive and easier to extend."
       >
         <ArchitectureDiagram />
       </Layout>
@@ -57,8 +87,8 @@ export function HomePage({ onGoToDemo }: HomePageProps) {
       <Layout
         id="cli"
         eyebrow="CLI Reference"
-        title="A concise interface for operators and developers."
-        description="Keeping the CLI sharp still matters because it is the fastest way to test runtime changes and showcase engineering depth."
+        title="Run and tune the runtime from the command line."
+        description="Camera selection, preview mode, smoothing, and pinch behavior can be adjusted directly from the CLI."
       >
         <CLIReference />
       </Layout>
@@ -66,8 +96,8 @@ export function HomePage({ onGoToDemo }: HomePageProps) {
       <Layout
         id="installation"
         eyebrow="Install"
-        title="From clone to runtime in minutes."
-        description="These are the commands you would surface on the landing page or in docs while the native installer is still in progress."
+        title="From clone to local runtime in minutes."
+        description="Install the dependencies, start the runtime, and use a webcam to control the cursor with your hand."
       >
         <InstallationSteps />
       </Layout>

@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 
 export function DemoPage() {
+  const base = import.meta.env.BASE_URL;
+
   return (
     <section className="demo-page">
       <motion.div
@@ -9,36 +11,46 @@ export function DemoPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55 }}
       >
-        <div className="eyebrow">Demo Surface</div>
-        <h2>Show the interaction before people install the runtime.</h2>
+        <div className="eyebrow">Demo</div>
+        <h2>See the runtime behavior and core gestures.</h2>
         <p>
-          These are the 2 core interactions of HandOS: cursor movement and pinch click. More complex gestures and visualizations can be added later, but this is the heart of the experience.
+          HandOS currently focuses on two core interactions: cursor movement from index fingertip
+          tracking and click input from a pinch gesture.
         </p>
       </motion.div>
 
       <div className="demo-grid">
         <article className="demo-card">
-          <h3>Cursor Movement</h3>
-          <img src="/demo.gif" alt="HandOS cursor movement demo" />
+          <h3>Runtime Demo</h3>
+          <video
+            className="demo-media"
+            controls
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={`${base}handpic.png`}
+          >
+            <source src={`${base}demo.mp4`} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
         </article>
         <article className="demo-card">
           <h3>Pinch Click</h3>
-          <img src="/click_demo.gif" alt="HandOS pinch click demo" />
+          <img className="demo-media" src={`${base}click_demo.gif`} alt="HandOS pinch click demo" />
         </article>
       </div>
 
-      {/*
       <div className="demo-notes">
         <div>
-          <span className="eyebrow">Presentation angle</span>
-          <p>Lead with privacy, low latency, and accessibility instead of calling the core runtime a SaaS.</p>
+          <span className="eyebrow">Cursor Control</span>
+          <p>The cursor follows tracked hand motion after screen mapping, smoothing, and dead-zone suppression.</p>
         </div>
         <div>
-          <span className="eyebrow">Future extension</span>
-          <p>Add a browser-only visualization mode here later if you want a lightweight shareable demo without OS control.</p>
+          <span className="eyebrow">Click Gesture</span>
+          <p>Clicks are triggered from a pinch state machine designed to reduce accidental activation and improve control stability.</p>
         </div>
       </div>
-       */}
     </section>
   );
 }

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { ArrowRight, Github, PlayCircle } from "lucide-react";
 
 type HeroProps = {
   onGoToDemo: () => void;
@@ -14,25 +14,35 @@ export function Hero({ onGoToDemo }: HeroProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
       >
-        <div className="eyebrow">Local-First Gesture Runtime</div>
-        <h1>Turn a computer vision prototype into a product people can trust.</h1>
+        <div className="eyebrow">Hand Gesture Control</div>
+        <h1>Control your cursor with hand movement and click with a pinch gesture.</h1>
         <p>
-          HandOS combines a native gesture engine with a polished presentation layer, giving you
-          low-latency cursor control, privacy-first processing, and a credible product story.
+          HandOS uses on-device computer vision to track a hand from a webcam, map fingertip
+          movement to the desktop cursor, and trigger clicks from a pinch gesture.
         </p>
         <div className="hero-actions">
           <button className="primary-button" onClick={onGoToDemo}>
             View Demo
             <PlayCircle size={18} />
           </button>
+          <a
+            className="secondary-button"
+            href="https://github.com/arnav-sutraway/HandOS"
+            target="_blank"
+            rel="noreferrer"
+          >
+            View GitHub
+            <Github size={18} />
+          </a>
           <a className="secondary-button" href="#installation">
-            Install Runtime
+            Run Locally
             <ArrowRight size={18} />
           </a>
         </div>
         <div className="hero-meta">
           <span>`python -m handos --no-preview`</span>
-          <span>Local processing only</span>
+          <span>On-device tracking</span>
+          <span>Pinch-to-click</span>
           <span>Engine/UI separation</span>
         </div>
       </motion.div>
@@ -60,16 +70,16 @@ export function Hero({ onGoToDemo }: HeroProps) {
         </div>
         <div className="hero-stats">
           <div>
-            <strong>On-device</strong>
-            <span>Computer vision loop</span>
+            <strong>Local-first</strong>
+            <span>On-device camera processing</span>
           </div>
           <div>
             <strong>Threaded</strong>
-            <span>Capture and inference queues</span>
+            <span>Capture, vision, and control loop</span>
           </div>
           <div>
-            <strong>Observable</strong>
-            <span>Structured engine events</span>
+            <strong>Gesture-driven</strong>
+            <span>Cursor movement and click input</span>
           </div>
         </div>
       </motion.div>
