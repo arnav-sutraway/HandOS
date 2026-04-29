@@ -466,7 +466,8 @@ code,
 }
 
 video.demo-media {
-  object-fit: cover;
+  object-fit: contain;
+  object-position: top center;
 }
 
 img.demo-media {
