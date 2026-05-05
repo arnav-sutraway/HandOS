@@ -13,7 +13,7 @@ def landmark_to_screen(
     Map a normalized MediaPipe landmark (x,y in ~[0,1]) to pixel coordinates.
     MediaPipe x is normalized by frame width, y by frame height.
     """
-    multiplier = 1.4  # Optional scaling factor to allow reaching screen edges
+    multiplier = 1.6  # Optional scaling factor to allow reaching screen edges
     x = float(landmark_xy[0])
     y = float(landmark_xy[1])
     if mirror_x:

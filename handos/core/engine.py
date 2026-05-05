@@ -112,6 +112,15 @@ class GestureEngine:
             raise RuntimeError(self._latest_error)
 
         self._vision.start()
+
+        '''
+        After starting the camera and vision threads, we launch the main loop in a separate thread.
+        This loop will read processed vision packets, update the engine state, and emit events.
+        '''
+        if self._mouse is not None:
+            # Start from a predictable cursor position before live tracking
+            # takes over, which makes the first gesture adjustment less jarring.
+            self._mouse.move_to(self._mouse.screen_w / 2, self._mouse.screen_h / 2)
         self._loop_thread = threading.Thread(
             target=self._run_loop,
             name="HandOS-Engine",
