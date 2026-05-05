@@ -9,6 +9,8 @@ if sys.platform == "win32":
     INPUT_MOUSE = 0
     MOUSEEVENTF_LEFTDOWN = 0x0002
     MOUSEEVENTF_LEFTUP = 0x0004
+    MOUSEEVENTF_RIGHTDOWN = 0x0008
+    MOUSEEVENTF_RIGHTUP = 0x0010
 
     class MOUSEINPUT(ctypes.Structure):
         _fields_ = [
@@ -32,7 +34,7 @@ if sys.platform == "win32":
 
 
 class MouseController:
-    """Cross-platform mouse injection (Phase 1: move + left click)."""
+    """Cross-platform mouse injection for pointer movement and button clicks."""
 
     def __init__(self, screen_size: Optional[Tuple[int, int]] = None) -> None:
         if screen_size is None:
@@ -49,14 +51,23 @@ class MouseController:
 
     def click_left(self) -> bool:
         if sys.platform == "win32":
-            return self._click_left_windows()
+            return self._click_windows(MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, button="left")
         pyautogui.click(button="left", _pause=False)
         return True
 
-    def _click_left_windows(self) -> bool:
+    def click_right(self) -> bool:
+        if sys.platform == "win32":
+            return self._click_windows(MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, button="right")
+        pyautogui.click(button="right", _pause=False)
+        return True
+
+    def _click_windows(self, down_flag: int, up_flag: int, *, button: str) -> bool:
+        # Use SendInput on Windows so click injection stays consistent with the
+        # existing low-latency left-click path. Fall back to pyautogui only if
+        # the native call reports a partial send.
         inputs = (
-            INPUT(type=INPUT_MOUSE, mi=MOUSEINPUT(dwFlags=MOUSEEVENTF_LEFTDOWN)),
-            INPUT(type=INPUT_MOUSE, mi=MOUSEINPUT(dwFlags=MOUSEEVENTF_LEFTUP)),
+            INPUT(type=INPUT_MOUSE, mi=MOUSEINPUT(dwFlags=down_flag)),
+            INPUT(type=INPUT_MOUSE, mi=MOUSEINPUT(dwFlags=up_flag)),
         )
         sent = ctypes.windll.user32.SendInput(
             len(inputs),
@@ -64,6 +75,6 @@ class MouseController:
             ctypes.sizeof(INPUT),
         )
         if sent != len(inputs):
-            pyautogui.click(button="left", _pause=False)
+            pyautogui.click(button=button, _pause=False)
             return False
         return True

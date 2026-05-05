@@ -10,7 +10,6 @@ export function Footer() {
         <a href="https://github.com/arnav-sutraway/HandOS" target="_blank" rel="noreferrer">
           GitHub Repository
         </a>
-        
         <p>Python runtime</p>
         <p>React + Framer Motion</p>
         <p>Privacy-first by design</p>

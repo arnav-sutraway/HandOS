@@ -13,11 +13,17 @@ from handos.ui.overlay import render_preview
 
 
 def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="HandOS Phase 1: index cursor + pinch click")
+    p = argparse.ArgumentParser(description="HandOS Phase 1: index cursor + primary/secondary pinch click")
     p.add_argument("--camera", type=int, default=0, help="OpenCV camera index")
     p.add_argument("--no-preview", action="store_true", help="Disable OpenCV preview window")
     p.add_argument("--dead-zone", type=float, default=5.0, help="Dead zone in pixels")
     p.add_argument("--pinch-threshold", type=float, default=0.30, help="Pinch ratio threshold (smaller = tighter pinch)")
+    p.add_argument(
+        "--right-pinch-threshold",
+        type=float,
+        default=0.34,
+        help="Right-click pinch ratio threshold for thumb + middle finger",
+    )
     p.add_argument("--pinch-activate-frames", type=int, default=3, help="Consecutive pinch frames to confirm")
     p.add_argument("--pinch-release-frames", type=int, default=3, help="Consecutive open frames to release pinch")
     p.add_argument(
@@ -25,6 +31,12 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         type=float,
         default=0.0,
         help="Stable pinch hold time before clicking once (default 0.0 = immediate click)",
+    )
+    p.add_argument(
+        "--right-click-hold-seconds",
+        type=float,
+        default=0.35,
+        help="Stable thumb + middle pinch hold before right click fires once",
     )
     p.add_argument("--debug-pinch", action="store_true", help="Print pinch/click debug events to the terminal")
     p.add_argument("--kalman-dt", type=float, default=1.0 / 30.0, help="Initial Kalman dt seconds")
@@ -55,9 +67,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         enable_mouse_control=True,
         dead_zone=args.dead_zone,
         pinch_threshold=args.pinch_threshold,
+        right_pinch_threshold=args.right_pinch_threshold,
         pinch_activate_frames=args.pinch_activate_frames,
         pinch_release_frames=args.pinch_release_frames,
         pinch_click_hold_seconds=args.pinch_click_hold_seconds,
+        right_click_hold_seconds=args.right_click_hold_seconds,
         debug_pinch=args.debug_pinch,
         kalman_dt=args.kalman_dt,
     )
@@ -68,8 +82,10 @@ def main(argv: Optional[list[str]] = None) -> int:
             payload = event.payload
             print(
                 (
-                    f"[pinch] ratio={payload['ratio']:.3f} threshold={payload['threshold']:.3f} "
-                    f"raw={payload['raw']} stable={payload['stable']}"
+                    f"[pinch] left={payload['left_ratio']:.3f}/{payload['left_threshold']:.3f} "
+                    f"right={payload['right_ratio']:.3f}/{payload['right_threshold']:.3f} "
+                    f"raw_left={payload['left_raw']} raw_right={payload['right_raw']} "
+                    f"stable_left={payload['left_stable']} stable_right={payload['right_stable']}"
                 ),
                 flush=True,
             )
@@ -77,7 +93,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             payload = event.payload
             print(
                 (
-                    f"[click] triggered ratio={payload['ratio']:.3f} "
+                    f"[click] {payload['button']} triggered ratio={payload['ratio']:.3f} "
                     f"hold={payload['hold_seconds']:.2f}s status={payload['status']}"
                 ),
                 flush=True,

@@ -36,22 +36,33 @@ def render_preview(snapshot: EngineSnapshot, config: EngineConfig) -> np.ndarray
     _draw_hand_overlay(vis, snapshot.landmarks)
     vis = cv2.flip(vis, 1)
 
-    label = "PINCH" if snapshot.stable_pinch else "MOVE"
+    if snapshot.click_label == "RIGHT":
+        label = "RIGHT PINCH"
+    elif snapshot.stable_pinch:
+        label = "PINCH"
+    else:
+        label = "MOVE"
     cv2.putText(vis, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
     cv2.putText(
         vis,
-        f"ratio {snapshot.pinch_value:.3f} / {config.pinch_threshold:.3f}",
+        (
+            f"left {snapshot.pinch_value:.3f} / {config.pinch_threshold:.3f}   "
+            f"right {snapshot.right_pinch_value:.3f} / {config.right_pinch_threshold:.3f}"
+        ),
         (10, 60),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
+        0.6,
         (255, 255, 255),
         2,
     )
-    if config.pinch_click_hold_seconds > 0.0 and snapshot.stable_pinch:
-        hold_progress = min(1.0, snapshot.held_seconds / config.pinch_click_hold_seconds)
+    active_hold_seconds = (
+        config.right_click_hold_seconds if snapshot.click_label == "RIGHT" else config.pinch_click_hold_seconds
+    )
+    if active_hold_seconds > 0.0 and snapshot.stable_pinch:
+        hold_progress = min(1.0, snapshot.held_seconds / active_hold_seconds)
         cv2.putText(
             vis,
-            f"hold {snapshot.held_seconds:.2f}s / {config.pinch_click_hold_seconds:.2f}s",
+            f"hold {snapshot.held_seconds:.2f}s / {active_hold_seconds:.2f}s",
             (10, 90),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.7,

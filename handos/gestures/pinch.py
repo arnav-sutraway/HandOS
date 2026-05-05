@@ -2,15 +2,25 @@ import numpy as np
 
 from handos.vision.preprocessor import hand_scale
 
+THUMB_TIP = 4
+INDEX_TIP = 8
+MIDDLE_TIP = 12
 
-def pinch_ratio(landmarks: np.ndarray, threshold: float = 0.05) -> tuple[float, bool]:
+
+def pinch_ratio(
+    landmarks: np.ndarray,
+    *,
+    finger_tip_index: int = INDEX_TIP,
+    thumb_tip_index: int = THUMB_TIP,
+    threshold: float = 0.05,
+) -> tuple[float, bool]:
     """
-    Normalized distance between thumb tip (4) and index tip (8).
+    Normalized distance between the thumb tip and one fingertip.
     Returns (ratio, is_pinch) where ratio = dist / hand_size.
     """
-    thumb_tip = landmarks[4, :2]
-    index_tip = landmarks[8, :2]
-    dist = float(np.linalg.norm(thumb_tip - index_tip))
+    thumb_tip = landmarks[thumb_tip_index, :2]
+    finger_tip = landmarks[finger_tip_index, :2]
+    dist = float(np.linalg.norm(thumb_tip - finger_tip))
     scale = hand_scale(landmarks)
     ratio = dist / scale
     return ratio, ratio < threshold

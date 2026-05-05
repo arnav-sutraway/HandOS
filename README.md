@@ -5,6 +5,7 @@ The current implementation (`handos` package, Phase 1) uses a webcam and MediaPi
 
 - Move the mouse cursor using the index fingertip
 - Trigger a left click using a pinch gesture (thumb + index), optionally after a sustained hold
+- Trigger a right click using a thumb + middle-finger pinch with a short hold
 - Smooth and stabilize motion with filtering and dead-zone suppression
 
 The repository now also includes:
@@ -20,6 +21,7 @@ All processing runs on-device. No cloud service is required.
 - Real-time webcam capture and landmark detection
 - Cursor control mapped from normalized hand coordinates to screen pixels
 - Debounced pinch detection with optional hold-to-click confirmation to reduce accidental clicks
+- Separate primary and secondary click gestures so right click does not overload double-click timing
 - Kalman-based cursor smoothing
 - Pixel dead-zone filtering to suppress jitter
 - Optional OpenCV preview window with hand overlay
@@ -37,6 +39,7 @@ This repository is in active development with a Phase 1 foundation complete:
 - Single-hand tracking (primary detected hand)
 - Index-finger cursor movement
 - Pinch-to-left-click
+- Thumb + middle pinch-to-right-click
 
 The codebase already includes scaffolding for later phases (for example, temporal buffers and EMA helpers), but these are not part of the current runtime behavior yet.
 
@@ -136,9 +139,11 @@ The runtime exposes the following options:
 - `--no-preview`: Disable OpenCV preview window
 - `--dead-zone <float>`: Pixel dead zone before cursor updates (default `5.0`)
 - `--pinch-threshold <float>`: Pinch ratio threshold (default `0.30`)
+- `--right-pinch-threshold <float>`: Right-click pinch ratio threshold for thumb + middle finger (default `0.34`)
 - `--pinch-activate-frames <int>`: Consecutive pinch frames to activate click state (default `3`)
 - `--pinch-release-frames <int>`: Consecutive open frames to release pinch state (default `3`)
 - `--pinch-click-hold-seconds <float>`: Stable pinch hold time before one click fires (default `0.0`)
+- `--right-click-hold-seconds <float>`: Stable thumb + middle pinch hold before one right click fires (default `0.35`)
 - `--debug-pinch`: Print pinch and click debug events to the terminal
 - `--kalman-dt <float>`: Initial Kalman timestep in seconds (default `1/30`)
 - `--width <int>`: Capture width (default `640`)
@@ -147,7 +152,7 @@ The runtime exposes the following options:
 Example with custom tuning:
 
 ```powershell
-python -m handos --camera 0 --width 1280 --height 720 --dead-zone 4 --pinch-threshold 0.30 --pinch-click-hold-seconds 1.0 --debug-pinch
+python -m handos --camera 0 --width 1280 --height 720 --dead-zone 4 --pinch-threshold 0.30 --right-pinch-threshold 0.34 --pinch-click-hold-seconds 0.0 --right-click-hold-seconds 0.35 --debug-pinch
 ```
 
 ## Runtime Architecture
@@ -161,8 +166,9 @@ The app is structured as a threaded pipeline:
    - Applies Kalman smoothing
    - Applies dead-zone suppression
    - Sends mouse movement through `pyautogui`
-   - Computes pinch ratio and applies state-machine debouncing
-   - Emits one left click once the pinch is confirmed, either immediately or after the configured hold time
+   - Computes separate thumb-index and thumb-middle pinch ratios
+   - Resolves overlap so only one click gesture can arm at a time
+   - Emits one left or right click once the selected gesture is confirmed
 
 This queue-based design keeps capture, inference, and control paths decoupled for better responsiveness.
 
@@ -174,6 +180,9 @@ This queue-based design keeps capture, inference, and control paths decoupled fo
   - Increase `--pinch-activate-frames`
   - Decrease `--pinch-threshold` (requires tighter pinch)
   - Increase `--pinch-click-hold-seconds`
+- If right click activates too easily:
+  - Decrease `--right-pinch-threshold`
+  - Increase `--right-click-hold-seconds`
 - If clicks feel delayed, decrease activation/release frame counts carefully.
 - Use `--debug-pinch` to see the live pinch ratio and click events in the terminal.
 

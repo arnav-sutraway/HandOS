@@ -12,15 +12,12 @@ from handos.actions.mouse import MouseController
 from handos.core.config import EngineConfig
 from handos.core.events import EngineEvent
 from handos.data import VisionPacket
-from handos.gestures.pinch import PinchStateMachine, pinch_ratio
+from handos.gestures.pinch import INDEX_TIP, MIDDLE_TIP, PinchStateMachine, pinch_ratio
 from handos.signal.dead_zone import DeadZone
 from handos.signal.kalman import CursorKalman2D
 from handos.vision.capture import CameraThread
 from handos.vision.preprocessor import landmark_to_screen
 from handos.vision.worker import VisionThread
-
-INDEX_TIP = 8
-
 
 @dataclass
 class EngineSnapshot:
@@ -31,7 +28,9 @@ class EngineSnapshot:
     handedness: str = ""
     handedness_score: float = 0.0
     pinch_value: float = 0.0
+    right_pinch_value: float = 0.0
     stable_pinch: bool = False
+    click_label: str = ""
     click_status: str = ""
     click_status_age_seconds: float = 0.0
     held_seconds: float = 0.0
@@ -68,6 +67,11 @@ class GestureEngine:
             activate_frames=config.pinch_activate_frames,
             release_frames=config.pinch_release_frames,
             click_hold_seconds=config.pinch_click_hold_seconds,
+        )
+        self._right_pinch_sm = PinchStateMachine(
+            activate_frames=config.pinch_activate_frames,
+            release_frames=config.pinch_release_frames,
+            click_hold_seconds=config.right_click_hold_seconds,
         )
 
     @property
@@ -139,6 +143,8 @@ class GestureEngine:
                 handedness_score=self._snapshot.handedness_score,
                 pinch_value=self._snapshot.pinch_value,
                 stable_pinch=self._snapshot.stable_pinch,
+                right_pinch_value=self._snapshot.right_pinch_value,
+                click_label=self._snapshot.click_label,
                 click_status=self._snapshot.click_status,
                 click_status_age_seconds=self._snapshot.click_status_age_seconds,
                 held_seconds=self._snapshot.held_seconds,
@@ -175,6 +181,7 @@ class GestureEngine:
                         self._emit("hand_lost", "Hand tracking lost.")
                     self._hand_present = False
                     self._pinch_sm.reset()
+                    self._right_pinch_sm.reset()
                     self._kf.reset()
                     self._dz.reset()
                     self._last_click_status = ""
@@ -194,7 +201,9 @@ class GestureEngine:
                 self._hand_present = True
 
                 lm = pkt.landmarks
-                pinch_value, stable_pinch = self._process_landmarks(lm, dt, now, last_debug_t)
+                pinch_value, right_pinch_value, stable_pinch, click_label = self._process_landmarks(
+                    lm, dt, now, last_debug_t
+                )
                 if now - last_debug_t >= 0.25:
                     last_debug_t = now
                 click_status_age = max(0.0, now - self._last_click_status_t)
@@ -205,10 +214,14 @@ class GestureEngine:
                     handedness=pkt.handedness,
                     handedness_score=pkt.handedness_score,
                     pinch_value=pinch_value,
+                    right_pinch_value=right_pinch_value,
                     stable_pinch=stable_pinch,
+                    click_label=click_label,
                     click_status=self._last_click_status if click_status_age <= 1.5 else "",
                     click_status_age_seconds=click_status_age,
-                    held_seconds=self._pinch_sm.held_seconds,
+                    held_seconds=(
+                        self._right_pinch_sm.held_seconds if click_label == "RIGHT" else self._pinch_sm.held_seconds
+                    ),
                     timestamp=time.time(),
                 )
                 if click_status_age > 1.5:
@@ -223,7 +236,7 @@ class GestureEngine:
         dt: float,
         now: float,
         last_debug_t: float,
-    ) -> tuple[float, bool]:
+    ) -> tuple[float, float, bool, str]:
         if self._mouse is not None:
             ix, iy = landmark_to_screen(
                 landmarks[INDEX_TIP, 0:2],
@@ -237,20 +250,60 @@ class GestureEngine:
                 mx, my = moved
                 self._mouse.move_to(mx, my)
 
-        pinch_value, is_pinch = pinch_ratio(landmarks, threshold=self.config.pinch_threshold)
-        stable_pinch, click_triggered = self._pinch_sm.update(is_pinch, dt)
+        pinch_value, left_raw = pinch_ratio(
+            landmarks,
+            finger_tip_index=INDEX_TIP,
+            threshold=self.config.pinch_threshold,
+        )
+        right_pinch_value, right_raw = pinch_ratio(
+            landmarks,
+            finger_tip_index=MIDDLE_TIP,
+            threshold=self.config.right_pinch_threshold,
+        )
+
+        # When both raw pinch tests read as "closed" in the same frame, treat the
+        # tighter pinch as the user's intended gesture so left and right clicks do
+        # not arm simultaneously.
+        if left_raw and right_raw:
+            if right_pinch_value < pinch_value:
+                left_raw = False
+            else:
+                right_raw = False
+
+        stable_pinch, click_triggered = self._pinch_sm.update(left_raw, dt)
+        right_stable_pinch, right_click_triggered = self._right_pinch_sm.update(right_raw, dt)
 
         if self.config.debug_pinch and now - last_debug_t >= 0.25:
             self._emit(
                 "pinch_debug",
                 "Pinch telemetry updated.",
-                ratio=round(pinch_value, 4),
-                threshold=self.config.pinch_threshold,
-                stable=stable_pinch,
-                raw=is_pinch,
+                left_ratio=round(pinch_value, 4),
+                left_threshold=self.config.pinch_threshold,
+                left_stable=stable_pinch,
+                left_raw=left_raw,
+                right_ratio=round(right_pinch_value, 4),
+                right_threshold=self.config.right_pinch_threshold,
+                right_stable=right_stable_pinch,
+                right_raw=right_raw,
             )
 
-        if click_triggered:
+        click_label = "RIGHT" if right_stable_pinch else "LEFT" if stable_pinch else ""
+
+        if right_click_triggered:
+            sent_native = True
+            if self._mouse is not None:
+                sent_native = self._mouse.click_right()
+            self._last_click_status = "RCLICK" if sent_native else "RCLICK_FALLBACK"
+            self._last_click_status_t = now
+            self._emit(
+                "click_triggered",
+                "Right-click gesture fired.",
+                button="right",
+                ratio=round(right_pinch_value, 4),
+                hold_seconds=self.config.right_click_hold_seconds,
+                status=self._last_click_status,
+            )
+        elif click_triggered:
             sent_native = True
             if self._mouse is not None:
                 sent_native = self._mouse.click_left()
@@ -259,12 +312,13 @@ class GestureEngine:
             self._emit(
                 "click_triggered",
                 "Click gesture fired.",
+                button="left",
                 ratio=round(pinch_value, 4),
                 hold_seconds=self.config.pinch_click_hold_seconds,
                 status=self._last_click_status,
             )
 
-        return pinch_value, stable_pinch
+        return pinch_value, right_pinch_value, stable_pinch or right_stable_pinch, click_label
 
     def _teardown(self) -> None:
         self._stop.set()
